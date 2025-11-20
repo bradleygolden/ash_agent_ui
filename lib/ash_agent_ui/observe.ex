@@ -1,4 +1,5 @@
 defmodule AshAgentUi.Observe do
+  @moduledoc false
   alias AshAgentUi.Observe.Store
 
   defdelegate list_runs(opts \\ []), to: Store

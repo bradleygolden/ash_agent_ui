@@ -122,106 +122,108 @@ defmodule AshAgentUi.OverviewLive do
             />
           </div>
 
-        <div class="overflow-hidden rounded-3xl border border-emerald-100/70 bg-white/90 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.3)] backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-[0_30px_90px_-70px_rgba(0,0,0,0.75)]">
-          <div class="flex flex-col gap-3 border-b border-emerald-100/80 px-5 py-3.5 text-sm text-zinc-600 dark:border-white/5 dark:text-zinc-300 md:flex-row md:items-center md:justify-between">
-            <div class="space-y-0.5">
-              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800/80 dark:text-emerald-100/80">
-                Recent runs
-              </p>
-              <p>Latest 50 executions with live updates.</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-100/80 bg-gradient-to-r from-white to-emerald-50/60 px-4 py-2.5 text-xs font-semibold text-emerald-800 shadow-[0_10px_35px_-30px_rgba(16,185,129,0.6)] dark:border-white/10 dark:from-white/5 dark:to-white/10 dark:text-emerald-100">
-              <span class="inline-flex items-center gap-2 rounded-xl bg-white/80 px-3 py-1 ring-1 ring-emerald-100/80 dark:bg-white/5 dark:ring-white/10">
-                Stream control
-              </span>
-              <span class={streaming_badge_classes(@streaming?)}>
-                <span class={streaming_dot_class(@streaming?)} />
-                {if @streaming?, do: "Streaming", else: "Paused"}
-              </span>
-              <button
-                type="button"
-                phx-click="toggle_streaming"
-                class={streaming_button_classes(@streaming?)}
-              >
-                <span class="inline-flex h-2 w-2 rounded-full bg-current opacity-70" />
-                <%= if @streaming?, do: "Pause live", else: "Resume live" %>
-              </button>
-            </div>
-          </div>
-          <%= if Enum.empty?(@runs) do %>
-            <div class="px-6 py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
-              <div class="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100/70 dark:bg-white/10 dark:text-emerald-100 dark:ring-white/10">
-                <span class="text-base font-semibold">i</span>
+          <div class="overflow-hidden rounded-3xl border border-emerald-100/70 bg-white/90 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.3)] backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-[0_30px_90px_-70px_rgba(0,0,0,0.75)]">
+            <div class="flex flex-col gap-3 border-b border-emerald-100/80 px-5 py-3.5 text-sm text-zinc-600 dark:border-white/5 dark:text-zinc-300 md:flex-row md:items-center md:justify-between">
+              <div class="space-y-0.5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-800/80 dark:text-emerald-100/80">
+                  Recent runs
+                </p>
+                <p>Latest 50 executions with live updates.</p>
               </div>
-              <p class="font-semibold text-zinc-700 dark:text-zinc-200">No runs captured yet.</p>
-              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Trigger a demo agent from the workbench home to populate live metrics, then keep this page open to stream updates.
-              </p>
+              <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-100/80 bg-gradient-to-r from-white to-emerald-50/60 px-4 py-2.5 text-xs font-semibold text-emerald-800 shadow-[0_10px_35px_-30px_rgba(16,185,129,0.6)] dark:border-white/10 dark:from-white/5 dark:to-white/10 dark:text-emerald-100">
+                <span class="inline-flex items-center gap-2 rounded-xl bg-white/80 px-3 py-1 ring-1 ring-emerald-100/80 dark:bg-white/5 dark:ring-white/10">
+                  Stream control
+                </span>
+                <span class={streaming_badge_classes(@streaming?)}>
+                  <span class={streaming_dot_class(@streaming?)} />
+                  {if @streaming?, do: "Streaming", else: "Paused"}
+                </span>
+                <button
+                  type="button"
+                  phx-click="toggle_streaming"
+                  class={streaming_button_classes(@streaming?)}
+                >
+                  <span class="inline-flex h-2 w-2 rounded-full bg-current opacity-70" />
+                  {if @streaming?, do: "Pause live", else: "Resume live"}
+                </button>
+              </div>
             </div>
-          <% else %>
-            <div class="overflow-x-auto">
-              <table class="w-full min-w-[820px] text-left text-sm">
-                <thead class="bg-emerald-50/80 text-xs uppercase tracking-[0.18em] text-emerald-800 dark:bg-white/5 dark:text-emerald-100">
-                  <tr>
-                    <th class="px-4 py-2.5">Agent</th>
-                    <th class="px-4 py-2.5">Type</th>
-                    <th class="px-4 py-2.5">Status</th>
-                    <th class="px-4 py-2.5">Started</th>
-                    <th class="px-4 py-2.5 text-right">Duration</th>
-                    <th class="px-4 py-2.5 text-right">Tokens</th>
-                    <th class="px-4 py-2.5 text-right">Details</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-emerald-100/70 dark:divide-white/5">
-                  <%= for run <- @runs do %>
-                    <tr class="transition-colors hover:bg-emerald-50/60 dark:hover:bg-white/10">
-                      <td class="px-4 py-2.5">
-                        <div class="flex flex-col gap-1">
-                          <p class="font-mono text-sm text-zinc-900 dark:text-white">
-                            {inspect(run.agent)}
-                          </p>
-                          <p class="text-[11px] text-zinc-400 dark:text-zinc-500">
-                            Provider {inspect(run.provider)} · Profile {format_profile(run.profile)} · Client {inspect(run.client)}
-                          </p>
-                        </div>
-                      </td>
-                      <td class="px-4 py-2.5 text-zinc-600 dark:text-zinc-300">
-                        <span class="rounded-full bg-emerald-50/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-100/80 dark:bg-white/5 dark:text-emerald-100 dark:ring-white/10">
-                          {run.type}
-                        </span>
-                      </td>
-                      <td class="px-4 py-2.5"><Components.status_badge status={run.status} /></td>
-                      <td class="px-4 py-2.5 text-zinc-600 dark:text-zinc-300">
-                        <div class="flex flex-col gap-1">
-                          <span class="font-mono text-sm text-zinc-800 dark:text-zinc-200">
-                            {format_datetime(run.started_at)}
-                          </span>
-                          <span class="text-xs text-zinc-500 dark:text-zinc-400">
-                            {format_relative(run.started_at)}
-                          </span>
-                        </div>
-                      </td>
-                      <td class="px-4 py-2.5 text-right font-mono text-sm text-zinc-800 dark:text-zinc-200">
-                        {format_duration(run.duration_ms)}
-                      </td>
-                      <td class="px-4 py-2.5 text-right font-mono text-sm text-zinc-800 dark:text-zinc-200">
-                        {token_count(run)}
-                      </td>
-                      <td class="px-4 py-2.5 text-right">
-                        <a
-                          class="inline-flex items-center gap-1 rounded-full border border-emerald-200/70 bg-emerald-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800 transition hover:-translate-y-[1px] hover:bg-emerald-100 dark:border-white/10 dark:bg-white/10 dark:text-emerald-100"
-                          href={Path.join(@base_path, "runs/#{run.id}")}
-                        >
-                          View
-                        </a>
-                      </td>
+            <%= if Enum.empty?(@runs) do %>
+              <div class="px-6 py-12 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                <div class="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100/70 dark:bg-white/10 dark:text-emerald-100 dark:ring-white/10">
+                  <span class="text-base font-semibold">i</span>
+                </div>
+                <p class="font-semibold text-zinc-700 dark:text-zinc-200">No runs captured yet.</p>
+                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  Trigger a demo agent from the workbench home to populate live metrics, then keep this page open to stream updates.
+                </p>
+              </div>
+            <% else %>
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[820px] text-left text-sm">
+                  <thead class="bg-emerald-50/80 text-xs uppercase tracking-[0.18em] text-emerald-800 dark:bg-white/5 dark:text-emerald-100">
+                    <tr>
+                      <th class="px-4 py-2.5">Agent</th>
+                      <th class="px-4 py-2.5">Type</th>
+                      <th class="px-4 py-2.5">Status</th>
+                      <th class="px-4 py-2.5">Started</th>
+                      <th class="px-4 py-2.5 text-right">Duration</th>
+                      <th class="px-4 py-2.5 text-right">Tokens</th>
+                      <th class="px-4 py-2.5 text-right">Details</th>
                     </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-          <% end %>
-        </div>
+                  </thead>
+                  <tbody class="divide-y divide-emerald-100/70 dark:divide-white/5">
+                    <%= for run <- @runs do %>
+                      <tr class="transition-colors hover:bg-emerald-50/60 dark:hover:bg-white/10">
+                        <td class="px-4 py-2.5">
+                          <div class="flex flex-col gap-1">
+                            <p class="font-mono text-sm text-zinc-900 dark:text-white">
+                              {inspect(run.agent)}
+                            </p>
+                            <p class="text-[11px] text-zinc-400 dark:text-zinc-500">
+                              Provider {inspect(run.provider)} · Profile {format_profile(run.profile)} · Client {inspect(
+                                run.client
+                              )}
+                            </p>
+                          </div>
+                        </td>
+                        <td class="px-4 py-2.5 text-zinc-600 dark:text-zinc-300">
+                          <span class="rounded-full bg-emerald-50/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-100/80 dark:bg-white/5 dark:text-emerald-100 dark:ring-white/10">
+                            {run.type}
+                          </span>
+                        </td>
+                        <td class="px-4 py-2.5"><Components.status_badge status={run.status} /></td>
+                        <td class="px-4 py-2.5 text-zinc-600 dark:text-zinc-300">
+                          <div class="flex flex-col gap-1">
+                            <span class="font-mono text-sm text-zinc-800 dark:text-zinc-200">
+                              {format_datetime(run.started_at)}
+                            </span>
+                            <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                              {format_relative(run.started_at)}
+                            </span>
+                          </div>
+                        </td>
+                        <td class="px-4 py-2.5 text-right font-mono text-sm text-zinc-800 dark:text-zinc-200">
+                          {format_duration(run.duration_ms)}
+                        </td>
+                        <td class="px-4 py-2.5 text-right font-mono text-sm text-zinc-800 dark:text-zinc-200">
+                          {token_count(run)}
+                        </td>
+                        <td class="px-4 py-2.5 text-right">
+                          <a
+                            class="inline-flex items-center gap-1 rounded-full border border-emerald-200/70 bg-emerald-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800 transition hover:-translate-y-[1px] hover:bg-emerald-100 dark:border-white/10 dark:bg-white/10 dark:text-emerald-100"
+                            href={Path.join(@base_path, "runs/#{run.id}")}
+                          >
+                            View
+                          </a>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+            <% end %>
+          </div>
         </div>
       </section>
     </Layouts.app>

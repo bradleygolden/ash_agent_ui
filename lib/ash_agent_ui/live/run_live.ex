@@ -52,7 +52,9 @@ defmodule AshAgentUi.RunLive do
                 {inspect(@run.agent)}
               </h1>
               <p class="text-sm text-zinc-600 dark:text-zinc-200/80">
-                Client {inspect(@run.client)} · Provider {inspect(@run.provider)} · Profile {format_profile(@run.profile)}
+                Client {inspect(@run.client)} · Provider {inspect(@run.provider)} · Profile {format_profile(
+                  @run.profile
+                )}
               </p>
               <div class="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-100/80 dark:bg-white/5 dark:text-emerald-100 dark:ring-white/10">
                 <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -351,6 +353,7 @@ defmodule AshAgentUi.RunLive do
   defp event_label(%{type: :progressive_token_based}), do: "Progressive disclosure (token based)"
   defp event_label(%{type: :prompt_rendered}), do: "Prompt rendered"
   defp event_label(%{type: :llm_request}), do: "LLM request"
+
   defp event_label(%{type: :llm_response, metadata: meta}) do
     "LLM response #{meta_value(meta, :status) || ""}"
   end
@@ -412,6 +415,7 @@ defmodule AshAgentUi.RunLive do
 
   defp event_details(%{type: :tool_decision, metadata: meta}) do
     considered = meta_value(meta, :considered)
+
     if considered do
       "Considered: #{inspect(considered, limit: :infinity)}"
     end
@@ -432,6 +436,7 @@ defmodule AshAgentUi.RunLive do
   defp event_details(%{type: :prompt_rendered, metadata: meta, measurements: meas}) do
     length = meas[:length]
     preview = meta_value(meta, :prompt_preview)
+
     parts =
       [
         length && "Length: #{length} bytes",
@@ -450,6 +455,7 @@ defmodule AshAgentUi.RunLive do
   defp event_details(%{type: :llm_response, metadata: meta}) do
     status = meta_value(meta, :status)
     iter = meta_value(meta, :iteration)
+
     [iter && "Iteration #{iter}", status && "Status: #{status}"]
     |> Enum.reject(&is_nil/1)
     |> Enum.join(" · ")
@@ -459,10 +465,13 @@ defmodule AshAgentUi.RunLive do
     parts =
       [
         meta_value(meta, :status) && "Status: #{meta_value(meta, :status)}",
-        meta_value(meta, :usage) && "Usage: #{inspect(meta_value(meta, :usage), limit: :infinity)}",
+        meta_value(meta, :usage) &&
+          "Usage: #{inspect(meta_value(meta, :usage), limit: :infinity)}",
         meta_value(meta, :finish_reason) && "Finish: #{meta_value(meta, :finish_reason)}",
-        meta_value(meta, :input) && "Input: #{inspect(meta_value(meta, :input), limit: :infinity)}",
-        meta_value(meta, :result) && "Result: #{inspect(meta_value(meta, :result), limit: :infinity)}"
+        meta_value(meta, :input) &&
+          "Input: #{inspect(meta_value(meta, :input), limit: :infinity)}",
+        meta_value(meta, :result) &&
+          "Result: #{inspect(meta_value(meta, :result), limit: :infinity)}"
       ]
       |> Enum.reject(&is_nil/1)
 

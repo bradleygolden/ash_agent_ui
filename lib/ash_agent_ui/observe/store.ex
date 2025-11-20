@@ -1,4 +1,5 @@
 defmodule AshAgentUi.Observe.Store do
+  @moduledoc false
   use GenServer
 
   alias AshAgentUi.Observe.Run

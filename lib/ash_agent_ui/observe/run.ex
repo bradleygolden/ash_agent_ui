@@ -1,4 +1,5 @@
 defmodule AshAgentUi.Observe.Run do
+  @moduledoc false
   @enforce_keys [:id, :agent, :provider, :client, :type, :status, :started_at]
   defstruct [
     :id,

@@ -48,9 +48,12 @@ defmodule AshAgentUi.MixProject do
        compile: false,
        depth: 1},
       {:jason, "~> 1.2"},
-      {:igniter, "~> 0.3"}
-    ]
-    ++ ash_agent_dep()
+      {:igniter, "~> 0.3"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.30", only: [:dev, :test], runtime: false}
+    ] ++
+      ash_agent_dep()
   end
 
   defp ash_agent_dep do

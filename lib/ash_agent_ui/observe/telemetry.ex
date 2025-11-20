@@ -99,35 +99,39 @@ defmodule AshAgentUi.Observe.Telemetry do
 
   def handle_event([:ash_agent, kind, :stop], measurements, metadata, config)
       when kind in [:call, :stream] do
-    with {:ok, run_id} <- lookup_run_id(metadata[:telemetry_span_context], config) do
-      attrs = build_run_update_attrs(measurements, metadata)
-      {:ok, run} = Observe.update_run(run_id, attrs)
-      broadcast_run(:run_updated, run, config.pubsub)
-    else
-      _ -> :ok
+    case lookup_run_id(metadata[:telemetry_span_context], config) do
+      {:ok, run_id} ->
+        attrs = build_run_update_attrs(measurements, metadata)
+        {:ok, run} = Observe.update_run(run_id, attrs)
+        broadcast_run(:run_updated, run, config.pubsub)
+
+      _ ->
+        :ok
     end
   end
 
   def handle_event([:ash_agent, _kind, :exception], _measurements, metadata, config) do
-    with {:ok, run_id} <- lookup_run_id(metadata[:telemetry_span_context], config) do
-      attrs =
-        build_run_update_attrs(%{}, metadata, %{
-          status: :error,
-          error:
-            Map.get(metadata, :error) ||
-              %{
-                kind: Map.get(metadata, :kind),
-                reason: Map.get(metadata, :reason),
-                stacktrace: Map.get(metadata, :stacktrace)
-              }
-        })
+    case lookup_run_id(metadata[:telemetry_span_context], config) do
+      {:ok, run_id} ->
+        attrs =
+          build_run_update_attrs(%{}, metadata, %{
+            status: :error,
+            error:
+              Map.get(metadata, :error) ||
+                %{
+                  kind: Map.get(metadata, :kind),
+                  reason: Map.get(metadata, :reason),
+                  stacktrace: Map.get(metadata, :stacktrace)
+                }
+          })
 
-      {:ok, run} = Observe.update_run(run_id, attrs)
-      pop_pid(config.pid_table, self())
-      untrack_span(config.span_table, metadata[:telemetry_span_context])
-      broadcast_run(:run_updated, run, config.pubsub)
-    else
-      _ -> :ok
+        {:ok, run} = Observe.update_run(run_id, attrs)
+        pop_pid(config.pid_table, self())
+        untrack_span(config.span_table, metadata[:telemetry_span_context])
+        broadcast_run(:run_updated, run, config.pubsub)
+
+      _ ->
+        :ok
     end
   end
 
@@ -345,7 +349,8 @@ defmodule AshAgentUi.Observe.Telemetry do
     with {:ok, run_id} <-
            lookup_run_id(metadata[:telemetry_span_context], config)
            |> fallback_pid_lookup(config),
-         {:ok, run} <- persist_event(run_id, build_event(event_name, measurements, metadata), config) do
+         {:ok, run} <-
+           persist_event(run_id, build_event(event_name, measurements, metadata), config) do
       broadcast_run(:run_updated, run, config.pubsub)
       pop_pid(config.pid_table, self())
       untrack_span(config.span_table, metadata[:telemetry_span_context])
@@ -365,8 +370,12 @@ defmodule AshAgentUi.Observe.Telemetry do
 
   defp persist_event(run_id, event, config) do
     case Observe.append_event(run_id, event) do
-      {:ok, _run} -> broadcast_event(run_id, event, config.pubsub)
-      _ -> :ok
+      {:ok, run} ->
+        broadcast_event(run_id, event, config.pubsub)
+        {:ok, run}
+
+      error ->
+        error
     end
   end
 
@@ -426,8 +435,6 @@ defmodule AshAgentUi.Observe.Telemetry do
     List.last(event)
   end
 
-  defp infer_event_type(_), do: :event
-
   defp fallback_pid_lookup({:ok, _run_id} = ok, _config), do: ok
   defp fallback_pid_lookup(_error, config), do: lookup_pid(self(), config)
 
@@ -471,42 +478,49 @@ defmodule AshAgentUi.Observe.Telemetry do
   defp response_field(response, key), do: Map.get(response, key)
 
   defp build_http_snapshot(metadata, provider_meta) do
-    http_context =
-      case provider_meta do
-        nil -> nil
-        meta -> fetch_field(meta, :http_context) || fetch_field(meta, :http)
-      end
+    provider_meta
+    |> provider_http_context()
+    |> clean_term()
+    |> snapshot_from_http_context(metadata)
+  end
 
-    http_context = clean_term(http_context)
+  defp provider_http_context(nil), do: nil
 
-    cond do
-      is_map(http_context) ->
-        snapshot =
-          %{
-            url: fetch_field(http_context, :url),
-            method: fetch_field(http_context, :method),
-            status: fetch_field(http_context, :status) || Map.get(metadata, :status),
-            request_headers: fetch_field(http_context, :req_headers),
-            response_headers: fetch_field(http_context, :resp_headers)
-          }
-          |> Enum.reject(fn {_key, value} -> is_nil(value) or value == %{} end)
-          |> Map.new()
+  defp provider_http_context(meta),
+    do: fetch_field(meta, :http_context) || fetch_field(meta, :http)
 
-        if map_size(snapshot) == 0, do: nil, else: snapshot
+  defp snapshot_from_http_context(%{} = http_context, metadata) do
+    %{
+      url: fetch_field(http_context, :url),
+      method: fetch_field(http_context, :method),
+      status: fetch_field(http_context, :status) || Map.get(metadata, :status),
+      request_headers: fetch_field(http_context, :req_headers),
+      response_headers: fetch_field(http_context, :resp_headers)
+    }
+    |> prune_empty_snapshot()
+  end
 
-      metadata[:status] || metadata[:headers] ->
-        snapshot =
-          %{
-            status: Map.get(metadata, :status),
-            response_headers: metadata[:headers]
-          }
-          |> Enum.reject(fn {_key, value} -> is_nil(value) end)
-          |> Map.new()
+  defp snapshot_from_http_context(_http_context, %{status: status, headers: headers} = metadata) do
+    if status || headers do
+      %{
+        status: Map.get(metadata, :status),
+        response_headers: metadata[:headers]
+      }
+      |> prune_empty_snapshot()
+    else
+      nil
+    end
+  end
 
-        if map_size(snapshot) == 0, do: nil, else: snapshot
+  defp snapshot_from_http_context(_http_context, _metadata), do: nil
 
-      true ->
-        nil
+  defp prune_empty_snapshot(snapshot) do
+    snapshot
+    |> Enum.reject(fn {_key, value} -> is_nil(value) or value == %{} end)
+    |> Map.new()
+    |> case do
+      %{} = map when map_size(map) == 0 -> nil
+      map -> map
     end
   end
 
@@ -565,7 +579,14 @@ defmodule AshAgentUi.Observe.Telemetry do
     :telemetry.attach(tool_retry_id, @tool_retry_event, &__MODULE__.handle_event/4, config)
     :telemetry.attach(tool_error_id, @tool_error_event, &__MODULE__.handle_event/4, config)
     :telemetry.attach(token_id, @token_warning_event, &__MODULE__.handle_event/4, config)
-    :telemetry.attach(token_progress_id, @token_progress_event, &__MODULE__.handle_event/4, config)
+
+    :telemetry.attach(
+      token_progress_id,
+      @token_progress_event,
+      &__MODULE__.handle_event/4,
+      config
+    )
+
     :telemetry.attach_many(hook_id, @hook_events, &__MODULE__.handle_event/4, config)
 
     :telemetry.attach_many(
@@ -578,9 +599,23 @@ defmodule AshAgentUi.Observe.Telemetry do
     :telemetry.attach(prompt_id, @prompt_rendered_event, &__MODULE__.handle_event/4, config)
     :telemetry.attach(llm_request_id, @llm_request_event, &__MODULE__.handle_event/4, config)
     :telemetry.attach(llm_response_id, @llm_response_event, &__MODULE__.handle_event/4, config)
-    :telemetry.attach(stream_chunk_id, [:ash_agent, :stream, :chunk], &__MODULE__.handle_event/4, config)
+
+    :telemetry.attach(
+      stream_chunk_id,
+      [:ash_agent, :stream, :chunk],
+      &__MODULE__.handle_event/4,
+      config
+    )
+
     :telemetry.attach(call_summary_id, @call_summary_event, &__MODULE__.handle_event/4, config)
-    :telemetry.attach(stream_summary_id, @stream_summary_event, &__MODULE__.handle_event/4, config)
+
+    :telemetry.attach(
+      stream_summary_id,
+      @stream_summary_event,
+      &__MODULE__.handle_event/4,
+      config
+    )
+
     :telemetry.attach(annotation_id, @annotation_event, &__MODULE__.handle_event/4, config)
 
     [

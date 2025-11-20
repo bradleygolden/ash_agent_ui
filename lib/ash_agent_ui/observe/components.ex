@@ -1,4 +1,5 @@
 defmodule AshAgentUi.Observe.Components do
+  @moduledoc false
   use Phoenix.Component
 
   attr :label, :string, required: true
@@ -29,7 +30,9 @@ defmodule AshAgentUi.Observe.Components do
           <p class="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{@hint}</p>
         <% end %>
         <%= if @caption do %>
-          <p class="text-[11px] leading-relaxed text-emerald-800/80 dark:text-emerald-100/80">{@caption}</p>
+          <p class="text-[11px] leading-relaxed text-emerald-800/80 dark:text-emerald-100/80">
+            {@caption}
+          </p>
         <% end %>
       </div>
     </div>

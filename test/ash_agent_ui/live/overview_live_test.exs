@@ -1,9 +1,9 @@
 defmodule AshAgentUi.OverviewLiveTest do
   use ExUnit.Case, async: false
 
-  alias AshAgentUi.OverviewLive
   alias AshAgentUi.Observe
   alias AshAgentUi.Observe.Run
+  alias AshAgentUi.OverviewLive
   alias Phoenix.LiveView.Socket
 
   setup do
@@ -58,7 +58,9 @@ defmodule AshAgentUi.OverviewLiveTest do
       private: %{ash_agent_ui_base_path: "/ash-agent-ui"}
     }
 
-    {:ok, socket} = OverviewLive.mount(%{}, %{"ash_agent_ui_base_path" => "/ash-agent-ui"}, socket)
+    {:ok, socket} =
+      OverviewLive.mount(%{}, %{"ash_agent_ui_base_path" => "/ash-agent-ui"}, socket)
+
     assert socket.assigns.streaming?
 
     {:noreply, paused} = OverviewLive.handle_event("toggle_streaming", %{}, socket)
@@ -80,6 +82,7 @@ defmodule AshAgentUi.OverviewLiveTest do
     {:noreply, resumed} = OverviewLive.handle_event("toggle_streaming", %{}, paused_after_info)
     assert resumed.assigns.streaming?
     assert hd(resumed.assigns.runs).id == new_run.id
+
     assert resumed.assigns.stats.active_runs ==
              Integer.to_string(Enum.count(resumed.assigns.runs, &(&1.status == :running)))
   end
