@@ -1,9 +1,9 @@
 defmodule AshAgentUi do
   @moduledoc """
-  AshAgentUi keeps the contexts that define your domain
-  and business logic.
+  Entry point for Ash Agent UI's embeddable surfaces.
 
-  Contexts are also responsible for managing your data, regardless
-  if it comes from the database, an external API or others.
+  The library exposes a router macro (`AshAgentUi.Router`) that can be mounted inside any Phoenix
+  application's router, similar to `Phoenix.LiveDashboard.Router`. The UI itself streams data from
+  Ash Agent and Ash BAML, so the host application only needs to provide authentication and pipelines.
   """
 end
