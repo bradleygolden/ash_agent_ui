@@ -70,7 +70,15 @@ defmodule AshAgentUi.MixProject do
   defp aliases do
     [
       setup: ["deps.get"],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "deps.get",
+        "compile --warnings-as-errors",
+        "format --check-formatted",
+        "credo --strict",
+        "dialyzer --format github",
+        "docs --warnings-as-errors",
+        "test --warnings-as-errors"
+      ]
     ]
   end
 end
