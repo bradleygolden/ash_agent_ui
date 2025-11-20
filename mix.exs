@@ -48,9 +48,17 @@ defmodule AshAgentUi.MixProject do
        compile: false,
        depth: 1},
       {:jason, "~> 1.2"},
-      {:igniter, "~> 0.3"},
-      {:ash_agent, path: "../ash_agent"}
+      {:igniter, "~> 0.3"}
     ]
+    ++ ash_agent_dep()
+  end
+
+  defp ash_agent_dep do
+    if File.exists?("../ash_agent/mix.exs") do
+      [{:ash_agent, path: "../ash_agent"}]
+    else
+      [{:ash_agent, github: "bradleygolden/ash_agent"}]
+    end
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
