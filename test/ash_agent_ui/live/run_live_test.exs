@@ -72,8 +72,8 @@ defmodule AshAgentUi.RunLiveTest do
       |> RunLive.render()
       |> rendered_to_string()
 
-    assert rendered =~ "HTTP metadata"
-    assert rendered =~ "Provider metadata"
+    assert rendered =~ "Payloads"
+    assert rendered =~ "Metadata"
     assert rendered =~ "Error"
     assert rendered =~ "Progressive disclosure (token based)"
     assert rendered =~ "Budget 1000"
