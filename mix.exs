@@ -49,6 +49,8 @@ defmodule AshAgentUi.MixProject do
        depth: 1},
       {:jason, "~> 1.2"},
       {:igniter, "~> 0.3"},
+      {:esbuild, "~> 0.8", only: :dev},
+      {:tailwind, "~> 0.2", only: :dev},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.30", only: [:dev, :test], runtime: false}
@@ -72,7 +74,10 @@ defmodule AshAgentUi.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get"],
+      setup: ["deps.get", "assets.setup", "assets.build"],
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+      "assets.build": ["tailwind ash_agent_ui", "esbuild ash_agent_ui"],
+      "assets.deploy": ["tailwind ash_agent_ui --minify", "esbuild ash_agent_ui --minify", "phx.digest"],
       precommit: [
         "deps.get",
         "compile --warnings-as-errors",

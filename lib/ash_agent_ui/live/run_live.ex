@@ -17,6 +17,7 @@ defmodule AshAgentUi.RunLive do
       |> assign(:run, run)
       |> assign(:events, run_events(run))
       |> assign(:base_path, base_path)
+      |> assign(:active_tab, :payloads)
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(AshAgentUi.PubSub, "ash_agent_ui:runs:#{id}")
@@ -37,166 +38,215 @@ defmodule AshAgentUi.RunLive do
   def handle_info(_message, socket), do: {:noreply, socket}
 
   @impl true
+  def handle_event("switch_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, :active_tab, String.to_existing_atom(tab))}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
-      <section class="space-y-10">
-        <div class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-white/90 p-8 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.35)] backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:shadow-[0_30px_90px_-70px_rgba(0,0,0,0.75)] lg:p-10">
-          <div class="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(16,185,129,0.14),transparent_40%),radial-gradient(circle_at_88%_0%,rgba(59,130,246,0.14),transparent_30%)]" />
-          <div class="relative flex flex-wrap items-center justify-between gap-6">
-            <div class="space-y-3">
-              <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700/80 dark:text-emerald-100/70">
-                Run Detail
-              </p>
-              <h1 class="text-3xl font-semibold text-zinc-900 drop-shadow-sm dark:text-white">
-                {inspect(@run.agent)}
-              </h1>
-              <p class="text-sm text-zinc-600 dark:text-zinc-200/80">
-                Client {inspect(@run.client)} · Provider {inspect(@run.provider)} · Profile {format_profile(
-                  @run.profile
-                )}
-              </p>
-              <div class="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-100/80 dark:bg-white/5 dark:text-emerald-100 dark:ring-white/10">
-                <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live updates
+    <Layouts.app flash={@flash} base_path={@base_path}>
+      <div class="h-full flex flex-col gap-4">
+        <!-- Header -->
+        <div class="shrink-0 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <a
+              href={@base_path}
+              class="group flex items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 hover:border-indigo-500 hover:text-indigo-600 transition-colors dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:border-indigo-400 dark:hover:text-indigo-400"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+            </a>
+            <div>
+              <div class="flex items-center gap-3">
+                <h1 class="text-lg font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                  {inspect(@run.agent)}
+                </h1>
+                <Components.status_badge status={@run.status} />
+              </div>
+              <div class="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span>{inspect(@run.client)}</span>
+                <span class="text-slate-300 dark:text-slate-600">•</span>
+                <span>{inspect(@run.provider)}</span>
+                <span class="text-slate-300 dark:text-slate-600">•</span>
+                <span>{format_profile(@run.profile)}</span>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <Components.status_badge status={@run.status} />
-              <a
-                href={@base_path}
-                class="inline-flex items-center gap-2 rounded-2xl border border-emerald-200/70 bg-emerald-50/80 px-3 py-2 text-sm font-semibold text-emerald-900 shadow-sm transition hover:-translate-y-[1px] hover:bg-emerald-100 dark:border-white/10 dark:bg-white/10 dark:text-emerald-100"
-              >
-                ← Back to overview
-              </a>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono text-slate-400 dark:text-slate-500">
+              {format_datetime(@run.started_at)}
+            </span>
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="shrink-0 grid grid-cols-3 gap-4">
+          <Components.stat_card
+            label="DURATION"
+            value={format_duration(@run.duration_ms)}
+            secondary_text="execution time"
+          />
+          <Components.stat_card
+            label="TOTAL TOKENS"
+            value={token_count(@run)}
+            secondary_text="usage"
+          />
+          <Components.stat_card
+            label="INPUT / OUTPUT"
+            value={token_breakdown(@run, :input_tokens)}
+            secondary_text={"/ #{token_breakdown(@run, :output_tokens)}"}
+          />
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Left Column: Data Tabs -->
+          <div class="lg:col-span-2 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/5 dark:bg-white/5">
+            <div class="shrink-0 border-b border-slate-200 px-4 dark:border-white/5">
+              <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                <button
+                  type="button"
+                  phx-click="switch_tab"
+                  phx-value-tab="payloads"
+                  class={[
+                    "whitespace-nowrap border-b-2 py-3 px-1 text-xs font-bold uppercase tracking-wider transition-colors",
+                    @active_tab == :payloads && "border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400",
+                    @active_tab != :payloads && "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-300"
+                  ]}
+                >
+                  Payloads
+                </button>
+                <button
+                  type="button"
+                  phx-click="switch_tab"
+                  phx-value-tab="metadata"
+                  class={[
+                    "whitespace-nowrap border-b-2 py-3 px-1 text-xs font-bold uppercase tracking-wider transition-colors",
+                    @active_tab == :metadata && "border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400",
+                    @active_tab != :metadata && "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-300"
+                  ]}
+                >
+                  Metadata
+                </button>
+                <%= if @run.error do %>
+                  <button
+                    type="button"
+                    phx-click="switch_tab"
+                    phx-value-tab="error"
+                    class={[
+                      "whitespace-nowrap border-b-2 py-3 px-1 text-xs font-bold uppercase tracking-wider transition-colors",
+                      @active_tab == :error && "border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400",
+                      @active_tab != :error && "border-transparent text-slate-500 hover:border-rose-300 hover:text-rose-700 dark:text-slate-400 dark:hover:border-rose-700 dark:hover:text-rose-300"
+                    ]}
+                  >
+                    Error
+                  </button>
+                <% end %>
+              </nav>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+              <%= case @active_tab do %>
+                <% :payloads -> %>
+                  <div class="space-y-6">
+                    <section>
+                      <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Input</h3>
+                      </div>
+                      <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
+                        <pre class="overflow-x-auto text-xs font-mono text-slate-700 dark:text-slate-300">{render_payload(@run.input)}</pre>
+                      </div>
+                    </section>
+
+                    <section>
+                      <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Result</h3>
+                      </div>
+                      <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
+                        <pre class="overflow-x-auto text-xs font-mono text-slate-700 dark:text-slate-300">{render_payload(@run.result)}</pre>
+                      </div>
+                    </section>
+                  </div>
+
+                <% :metadata -> %>
+                  <div class="space-y-6">
+                    <%= if @run.http do %>
+                      <section>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-2">HTTP Metadata</h3>
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
+                          <dl class="space-y-3 text-xs">
+                            <%= for {label, value} <- http_entries(@run.http) do %>
+                              <div>
+                                <dt class="font-medium text-slate-500 dark:text-slate-400">{label}</dt>
+                                <dd class="mt-1 font-mono text-slate-700 break-all dark:text-slate-300">{value}</dd>
+                              </div>
+                            <% end %>
+                          </dl>
+                        </div>
+                      </section>
+                    <% end %>
+
+                    <%= if @run.provider_meta do %>
+                      <section>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-2">Provider Metadata</h3>
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
+                          <pre class="overflow-x-auto text-xs font-mono text-slate-700 dark:text-slate-300">{render_payload(@run.provider_meta)}</pre>
+                        </div>
+                      </section>
+                    <% end %>
+                    
+                    <%= if !@run.http && !@run.provider_meta do %>
+                      <div class="text-center py-12 text-sm text-slate-500 dark:text-slate-400">
+                        No metadata available.
+                      </div>
+                    <% end %>
+                  </div>
+
+                <% :error -> %>
+                  <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/20 dark:bg-rose-500/10">
+                    <pre class="overflow-x-auto text-xs font-mono text-rose-900 dark:text-rose-100">{render_payload(@run.error)}</pre>
+                  </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Right Column: Timeline -->
+          <div class="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/5 dark:bg-white/5">
+            <div class="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-white/5">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Timeline</h3>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+              <%= if Enum.empty?(@events) do %>
+                <div class="px-4 py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                  No events captured yet.
+                </div>
+              <% else %>
+                <ul class="divide-y divide-slate-100 dark:divide-white/5">
+                  <%= for event <- @events do %>
+                    <li class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <div class="flex flex-col gap-1">
+                        <div class="flex items-start justify-between gap-2">
+                          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            {event_label(event)}
+                          </span>
+                          <span class="shrink-0 text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                            {format_time_only(event.timestamp)}
+                          </span>
+                        </div>
+                        <%= if details = event_details(event) do %>
+                          <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">{details}</p>
+                        <% end %>
+                      </div>
+                    </li>
+                  <% end %>
+                </ul>
+              <% end %>
             </div>
           </div>
         </div>
-
-        <div class="grid gap-4 sm:grid-cols-3">
-          <Components.stat_card label="Started" value={format_datetime(@run.started_at)} />
-          <Components.stat_card label="Duration" value={format_duration(@run.duration_ms)} />
-          <Components.stat_card label="Tokens" value={token_count(@run)} />
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-3">
-          <Components.stat_card
-            label="Input Tokens"
-            value={token_breakdown(@run, :input_tokens)}
-            hint="Prompt tokens"
-          />
-          <Components.stat_card
-            label="Output Tokens"
-            value={token_breakdown(@run, :output_tokens)}
-            hint="Completion tokens"
-          />
-          <Components.stat_card
-            label="Reasoning Tokens"
-            value={token_breakdown(@run, :reasoning_tokens)}
-            hint="Provider-reported reasoning tokens"
-          />
-        </div>
-
-        <div class="grid gap-6 lg:grid-cols-2">
-          <section class="rounded-2xl border border-emerald-100/70 bg-white/90 p-6 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.3)] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.75)]">
-            <p class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Input
-            </p>
-            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Arguments submitted to the agent
-            </p>
-            <pre class="mt-4 overflow-x-auto rounded-xl bg-zinc-900/80 p-4 text-xs text-emerald-100 ring-1 ring-black/5 dark:bg-black/30 dark:ring-white/5">{render_payload(@run.input)}</pre>
-          </section>
-
-          <section class="rounded-2xl border border-emerald-100/70 bg-white/90 p-6 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.3)] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.75)]">
-            <p class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Result
-            </p>
-            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Parsed output returned by the provider
-            </p>
-            <pre class="mt-4 overflow-x-auto rounded-xl bg-zinc-900/80 p-4 text-xs text-emerald-100 ring-1 ring-black/5 dark:bg-black/30 dark:ring-white/5">{render_payload(@run.result)}</pre>
-          </section>
-        </div>
-
-        <%= if @run.http || @run.provider_meta do %>
-          <div class="grid gap-6 lg:grid-cols-2">
-            <%= if @run.http do %>
-              <section class="rounded-2xl border border-emerald-100/70 bg-white/90 p-6 space-y-4 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.3)] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.75)]">
-                <div>
-                  <p class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                    HTTP metadata
-                  </p>
-                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                    Captured from provider telemetry
-                  </p>
-                </div>
-                <dl class="space-y-3 text-sm">
-                  <%= for {label, value} <- http_entries(@run.http) do %>
-                    <div>
-                      <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                        {label}
-                      </dt>
-                      <dd class="font-mono text-emerald-800 break-all dark:text-emerald-100">
-                        {value}
-                      </dd>
-                    </div>
-                  <% end %>
-                </dl>
-              </section>
-            <% end %>
-
-            <%= if @run.provider_meta do %>
-              <section class="rounded-2xl border border-emerald-100/70 bg-white/90 p-6 shadow-[0_20px_60px_-40px_rgba(0,0,0,0.3)] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_20px_70px_-50px_rgba(0,0,0,0.75)]">
-                <p class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                  Provider metadata
-                </p>
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  Provider model: {@run.response_model || "--"} · Response ID: {@run.response_id ||
-                    "--"} ·
-                  Finish: {@run.finish_reason || "--"}
-                </p>
-                <pre class="mt-4 overflow-x-auto rounded-xl bg-zinc-900/70 p-4 text-xs text-emerald-100 ring-1 ring-black/5 dark:bg-black/30 dark:ring-white/5">{render_payload(@run.provider_meta)}</pre>
-              </section>
-            <% end %>
-          </div>
-        <% end %>
-
-        <%= if @run.error do %>
-          <div class="rounded-2xl border border-rose-500/50 bg-rose-500/10 p-6 shadow-[0_20px_60px_-40px_rgba(244,63,94,0.6)]">
-            <p class="text-sm font-semibold uppercase tracking-wide text-rose-200">Error</p>
-            <pre class="mt-3 overflow-x-auto text-xs text-rose-100">{render_payload(@run.error)}</pre>
-          </div>
-        <% end %>
-
-        <div class="rounded-3xl border border-emerald-100/70 bg-white/90 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.3)] dark:border-white/10 dark:bg-white/5 dark:shadow-[0_30px_90px_-70px_rgba(0,0,0,0.75)]">
-          <div class="border-b border-emerald-100/60 px-6 py-4 flex items-center justify-between dark:border-white/5">
-            <p class="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Timeline
-            </p>
-            <span class="text-xs text-zinc-500 dark:text-zinc-500">{length(@events)} events</span>
-          </div>
-          <%= if Enum.empty?(@events) do %>
-            <p class="px-6 py-10 text-sm text-zinc-500 dark:text-zinc-400">No events captured yet.</p>
-          <% else %>
-            <ul class="divide-y divide-emerald-100/60 dark:divide-white/5">
-              <%= for event <- @events do %>
-                <li class="px-6 py-4 space-y-1">
-                  <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-white/5 dark:text-emerald-100 dark:ring-white/10">
-                    <span>{event_label(event)}</span>
-                  </div>
-                  <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                    {format_datetime(event.timestamp)}
-                  </p>
-                  <%= if details = event_details(event) do %>
-                    <p class="mt-2 text-sm text-emerald-800 dark:text-emerald-100/90">{details}</p>
-                  <% end %>
-                </li>
-              <% end %>
-            </ul>
-          <% end %>
-        </div>
-      </section>
+      </div>
     </Layouts.app>
     """
   end
@@ -230,17 +280,33 @@ defmodule AshAgentUi.RunLive do
     Calendar.strftime(dt, "%b %d %H:%M:%S.%3f")
   end
 
+  defp format_time_only(nil), do: "--"
+
+  defp format_time_only(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%H:%M:%S.%3f")
+  end
+
   defp format_duration(nil), do: "--"
   defp format_duration(ms) when is_number(ms), do: Integer.to_string(ms) <> " ms"
 
   defp token_count(%{usage: nil}), do: "--"
 
   defp token_count(%{usage: usage}) do
-    usage_value(usage, :total_tokens)
-    |> case do
-      0 -> "0"
-      value -> Integer.to_string(value)
-    end
+    total =
+      usage_value(usage, :total_tokens)
+      |> case do
+        0 -> "0"
+        value -> Integer.to_string(value)
+      end
+
+    input = usage_value(usage, :input_tokens)
+    output = usage_value(usage, :output_tokens)
+
+    assigns = %{total: total, input: input, output: output}
+
+    ~H"""
+    <span>{@total} <span class="text-slate-400 dark:text-slate-500">(<span class="text-emerald-600 dark:text-emerald-400">↓{@input}</span> / <span class="text-blue-600 dark:text-blue-400">↑{@output}</span>)</span></span>
+    """
   end
 
   defp token_breakdown(%{usage: nil}, _key), do: "--"

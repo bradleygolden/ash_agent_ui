@@ -32,6 +32,7 @@ defmodule AshAgentUi.Router do
         live_session :ash_agent_ui, session: %{"ash_agent_ui_base_path" => path} do
           live "/", AshAgentUi.OverviewLive, :home
           live "/runs/:id", AshAgentUi.RunLive, :run
+          get "/assets/:asset", AshAgentUi.AssetController, :show
         end
       end
     end

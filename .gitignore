@@ -35,3 +35,4 @@ ash_agent_ui-*.tar
 npm-debug.log
 /assets/node_modules/
 
+.hex-docs
