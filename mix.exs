@@ -77,7 +77,11 @@ defmodule AshAgentUi.MixProject do
       setup: ["deps.get", "assets.setup", "assets.build"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind ash_agent_ui", "esbuild ash_agent_ui"],
-      "assets.deploy": ["tailwind ash_agent_ui --minify", "esbuild ash_agent_ui --minify", "phx.digest"],
+      "assets.deploy": [
+        "tailwind ash_agent_ui --minify",
+        "esbuild ash_agent_ui --minify",
+        "phx.digest"
+      ],
       precommit: [
         "deps.get",
         "compile --warnings-as-errors",

@@ -54,8 +54,18 @@ defmodule AshAgentUi.RunLive do
               href={@base_path}
               class="group flex items-center justify-center w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 hover:border-indigo-500 hover:text-indigo-600 transition-colors dark:bg-white/5 dark:border-white/10 dark:text-slate-400 dark:hover:border-indigo-400 dark:hover:text-indigo-400"
             >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+                />
               </svg>
             </a>
             <div>
@@ -80,8 +90,8 @@ defmodule AshAgentUi.RunLive do
             </span>
           </div>
         </div>
-
-        <!-- Metrics -->
+        
+    <!-- Metrics -->
         <div class="shrink-0 grid grid-cols-3 gap-4">
           <Components.stat_card
             label="DURATION"
@@ -99,8 +109,8 @@ defmodule AshAgentUi.RunLive do
             secondary_text={"/ #{token_breakdown(@run, :output_tokens)}"}
           />
         </div>
-
-        <!-- Main Content -->
+        
+    <!-- Main Content -->
         <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <!-- Left Column: Data Tabs -->
           <div class="lg:col-span-2 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/5 dark:bg-white/5">
@@ -112,8 +122,10 @@ defmodule AshAgentUi.RunLive do
                   phx-value-tab="payloads"
                   class={[
                     "whitespace-nowrap border-b-2 py-3 px-1 text-xs font-bold uppercase tracking-wider transition-colors",
-                    @active_tab == :payloads && "border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400",
-                    @active_tab != :payloads && "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-300"
+                    @active_tab == :payloads &&
+                      "border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400",
+                    @active_tab != :payloads &&
+                      "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-300"
                   ]}
                 >
                   Payloads
@@ -124,8 +136,10 @@ defmodule AshAgentUi.RunLive do
                   phx-value-tab="metadata"
                   class={[
                     "whitespace-nowrap border-b-2 py-3 px-1 text-xs font-bold uppercase tracking-wider transition-colors",
-                    @active_tab == :metadata && "border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400",
-                    @active_tab != :metadata && "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-300"
+                    @active_tab == :metadata &&
+                      "border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400",
+                    @active_tab != :metadata &&
+                      "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-300"
                   ]}
                 >
                   Metadata
@@ -137,8 +151,10 @@ defmodule AshAgentUi.RunLive do
                     phx-value-tab="error"
                     class={[
                       "whitespace-nowrap border-b-2 py-3 px-1 text-xs font-bold uppercase tracking-wider transition-colors",
-                      @active_tab == :error && "border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400",
-                      @active_tab != :error && "border-transparent text-slate-500 hover:border-rose-300 hover:text-rose-700 dark:text-slate-400 dark:hover:border-rose-700 dark:hover:text-rose-300"
+                      @active_tab == :error &&
+                        "border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400",
+                      @active_tab != :error &&
+                        "border-transparent text-slate-500 hover:border-rose-300 hover:text-rose-700 dark:text-slate-400 dark:hover:border-rose-700 dark:hover:text-rose-300"
                     ]}
                   >
                     Error
@@ -153,7 +169,9 @@ defmodule AshAgentUi.RunLive do
                   <div class="space-y-6">
                     <section>
                       <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Input</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                          Input
+                        </h3>
                       </div>
                       <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
                         <pre class="overflow-x-auto text-xs font-mono text-slate-700 dark:text-slate-300">{render_payload(@run.input)}</pre>
@@ -162,25 +180,32 @@ defmodule AshAgentUi.RunLive do
 
                     <section>
                       <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Result</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                          Result
+                        </h3>
                       </div>
                       <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
                         <pre class="overflow-x-auto text-xs font-mono text-slate-700 dark:text-slate-300">{render_payload(@run.result)}</pre>
                       </div>
                     </section>
                   </div>
-
                 <% :metadata -> %>
                   <div class="space-y-6">
                     <%= if @run.http do %>
                       <section>
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-2">HTTP Metadata</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-2">
+                          HTTP Metadata
+                        </h3>
                         <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
                           <dl class="space-y-3 text-xs">
                             <%= for {label, value} <- http_entries(@run.http) do %>
                               <div>
-                                <dt class="font-medium text-slate-500 dark:text-slate-400">{label}</dt>
-                                <dd class="mt-1 font-mono text-slate-700 break-all dark:text-slate-300">{value}</dd>
+                                <dt class="font-medium text-slate-500 dark:text-slate-400">
+                                  {label}
+                                </dt>
+                                <dd class="mt-1 font-mono text-slate-700 break-all dark:text-slate-300">
+                                  {value}
+                                </dd>
                               </div>
                             <% end %>
                           </dl>
@@ -190,20 +215,21 @@ defmodule AshAgentUi.RunLive do
 
                     <%= if @run.provider_meta do %>
                       <section>
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-2">Provider Metadata</h3>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-2">
+                          Provider Metadata
+                        </h3>
                         <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-[#0B1120]/50">
                           <pre class="overflow-x-auto text-xs font-mono text-slate-700 dark:text-slate-300">{render_payload(@run.provider_meta)}</pre>
                         </div>
                       </section>
                     <% end %>
-                    
+
                     <%= if !@run.http && !@run.provider_meta do %>
                       <div class="text-center py-12 text-sm text-slate-500 dark:text-slate-400">
                         No metadata available.
                       </div>
                     <% end %>
                   </div>
-
                 <% :error -> %>
                   <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/20 dark:bg-rose-500/10">
                     <pre class="overflow-x-auto text-xs font-mono text-rose-900 dark:text-rose-100">{render_payload(@run.error)}</pre>
@@ -211,11 +237,13 @@ defmodule AshAgentUi.RunLive do
               <% end %>
             </div>
           </div>
-
-          <!-- Right Column: Timeline -->
+          
+    <!-- Right Column: Timeline -->
           <div class="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/5 dark:bg-white/5">
             <div class="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-white/5">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Timeline</h3>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                Timeline
+              </h3>
             </div>
             <div class="flex-1 overflow-y-auto">
               <%= if Enum.empty?(@events) do %>
@@ -236,7 +264,9 @@ defmodule AshAgentUi.RunLive do
                           </span>
                         </div>
                         <%= if details = event_details(event) do %>
-                          <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">{details}</p>
+                          <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                            {details}
+                          </p>
                         <% end %>
                       </div>
                     </li>
@@ -305,7 +335,12 @@ defmodule AshAgentUi.RunLive do
     assigns = %{total: total, input: input, output: output}
 
     ~H"""
-    <span>{@total} <span class="text-slate-400 dark:text-slate-500">(<span class="text-emerald-600 dark:text-emerald-400">↓{@input}</span> / <span class="text-blue-600 dark:text-blue-400">↑{@output}</span>)</span></span>
+    <span>
+      {@total}
+      <span class="text-slate-400 dark:text-slate-500">
+        (<span class="text-emerald-600 dark:text-emerald-400">↓{@input}</span> / <span class="text-blue-600 dark:text-blue-400">↑{@output}</span>)
+      </span>
+    </span>
     """
   end
 

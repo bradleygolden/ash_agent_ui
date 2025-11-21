@@ -39,7 +39,13 @@ defmodule AshAgentUi.Observe.Components do
     ~H"""
     <span class={status_classes(@status)}>
       <%= if @status == :ok do %>
-        <svg class="mr-1.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+        <svg
+          class="mr-1.5 h-3.5 w-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+        >
           <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
       <% else %>
