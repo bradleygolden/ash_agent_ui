@@ -59,8 +59,16 @@ defmodule AshAgentUi.MixProject do
   end
 
   defp ash_agent_dep do
-    if File.exists?("../ash_agent/mix.exs") do
-      [{:ash_agent, path: "../ash_agent", in_umbrella: true, env: Mix.env()}]
+    if File.exists?("../ash_baml/mix.exs") do
+      [
+        {:ash_baml,
+         in_umbrella: true,
+         env:
+           if(System.get_env("IS_UMBRELLA_ROOT") == "true",
+             do: Mix.env(),
+             else: :prod
+           )}
+      ]
     else
       [{:ash_agent, github: "bradleygolden/ash_agent"}]
     end
