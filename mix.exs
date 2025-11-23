@@ -60,7 +60,7 @@ defmodule AshAgentUi.MixProject do
 
   defp ash_agent_dep do
     if File.exists?("../ash_agent/mix.exs") do
-      [{:ash_agent, path: "../ash_agent"}]
+      [{:ash_agent, path: "../ash_agent", in_umbrella: true, env: Mix.env()}]
     else
       [{:ash_agent, github: "bradleygolden/ash_agent"}]
     end
